@@ -1,38 +1,40 @@
-# 工作流名称
 name: Build WPF Loopback Project
 
-# 触发条件：推送代码、手动触发
 on:
   push:
     branches: [ master, main ]
   pull_request:
     branches: [ master, main ]
-  workflow_dispatch: # 允许手动触发
+  workflow_dispatch:
 
-# 作业定义
 jobs:
   build:
-    # 使用 Windows 最新版运行器（必须用 Windows，WPF 依赖 Windows）
     runs-on: windows-latest
     
     steps:
-      # 步骤1：拉取代码到运行器
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 步骤2：设置 MSBuild 环境（自动定位 Visual Studio 中的 MSBuild）
       - name: Setup MSBuild
         uses: microsoft/setup-msbuild@v2
 
-      # 步骤3：编译 WPF 项目
       - name: Build project with MSBuild
-        working-directory: ./Loopback # 切换到项目所在目录（根据你的仓库结构调整）
-        run: msbuild Loopback.csproj /p:Configuration=Release /p:Platform="Any CPU" /p:TargetFrameworkVersion=v4.8
+        working-directory: ./Loopback
+        run: |
+          # 关键修改：
+          # 1. Platform 改为 AnyCPU（无空格），匹配项目默认配置
+          # 2. 手动指定 OutputPath，解决路径未设置的问题
+          # 3. 手动指定 BaseIntermediateOutputPath，避免中间文件路径报错
+          msbuild Loopback.csproj `
+            /p:Configuration=Release `
+            /p:Platform=AnyCPU `
+            /p:TargetFrameworkVersion=v4.8 `
+            /p:OutputPath=./bin/Release/ `
+            /p:BaseIntermediateOutputPath=./obj/Release/
 
-      # 步骤4：上传编译产物（可选，方便下载）
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: Loopback-Release
-          path: ./Loopback/bin/Release/ # 编译产物所在目录
-          if-no-files-found: error # 没有文件则报错
+          path: ./Loopback/bin/Release/
+          if-no-files-found: error
